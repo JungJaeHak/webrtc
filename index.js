@@ -1,47 +1,39 @@
-var WebSocketServer = require('ws').Server,
-    users = {};
+// WebSockerServer
+var WebSocketServer = require('ws').Server;
+// Users Array
+var users = {};
+// express
 var express = require('express');
 var app = express();
+// file system
 var fs = require('fs');
+// https
 var https = require('https');
+// ssl
 var options = {
     key: fs.readFileSync('deviceCA.key'),
     cert: fs.readFileSync('deviceCA.crt'),
 };
 
+// https server
+// port 8080
 var server = https.createServer(options, app);
-server.listen(8080, function() {
+server.listen(8080, function () {
     console.log((new Date()) + ' Server is listening on port 8080');
 });
 
-app.use(function (req, res, next) {
-
-    // Website you wish to allow to connect
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8888');
-
-    // Request methods you wish to allow
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-
-    // Request headers you wish to allow
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-
-    // Set to true if you need the website to include cookies in the requests sent
-    // to the API (e.g. in case you use sessions)
-    res.setHeader('Access-Control-Allow-Credentials', true);
-
-    // Pass to next layer of middleware
-    next();
-});
-
+// url '/' > index.html
 app.get('/', function (req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
+// url '/clinet.js' > client.js
 app.get('/client.js', function (req, res) {
     res.sendFile(__dirname + '/client.js');
 });
 
-
+// WebsocketServer make
+// server = httpsServer
 wss = new WebSocketServer({
     server: server,
     // You should not use autoAcceptConnections for production
@@ -50,17 +42,26 @@ wss = new WebSocketServer({
     // *always* verify the connection's origin and decide whether or not
     // to accept it.
     autoAcceptConnections: false
-});
+})
+
+// CrossOrigin
 function originIsAllowed(origin) {
     // put logic here to detect whether the specified origin is allowed.
     return true;
 }
 
+// connection
 wss.on('connection', function (connection) {
     console.log("User connected");
     connection.on('message', function (message) {
         var data;
         try {
+            /*
+             message = {
+                type: "something",
+                name: inputName
+             }
+             */
             data = JSON.parse(message);
         } catch (e) {
             console.log("Error parsing JSON");
@@ -69,14 +70,19 @@ wss.on('connection', function (connection) {
         switch (data.type) {
             case "login":
                 console.log("User logged in as", data.name);
+                // if name is already exist
                 if (users[data.name]) {
+                    // Send to Client
                     sendTo(connection, {
                         type: "login",
                         success: false
                     });
-                } else {
+                }
+                // if name isn't exist
+                else {
                     users[data.name] = connection;
                     connection.name = data.name;
+                    // Send to Client
                     sendTo(connection, {
                         type: "login",
                         success: true

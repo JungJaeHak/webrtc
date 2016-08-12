@@ -1,9 +1,11 @@
 /**
  * Created by kasatang on 2016-08-10.
  */
+// wss server computer's ip & port
 var connection = new WebSocket('wss://14.32.7.115:443'),
     name = "";
 
+// init vars
 var loginPage = document.querySelector('#login-page'),
     usernameInput = document.querySelector('#username'),
     loginButton = document.querySelector('#login'),
@@ -12,11 +14,13 @@ var loginPage = document.querySelector('#login-page'),
     callButton = document.querySelector('#call'),
     hangUpButton = document.querySelector('#hang-up');
 callPage.style.display = "none";
+
 // Login when the user clicks the button
 loginButton.addEventListener("click", function (event) {
     event.preventDefault();
     name = usernameInput.value;
     if (name.length > 0) {
+        //send to server
         send({
             type: "login",
             name: name
@@ -50,6 +54,8 @@ connection.onmessage = function (message) {
             break;
     }
 };
+
+// Print Error
 connection.onerror = function (err) {
     console.log("Got error", err);
 };
@@ -60,28 +66,38 @@ function send(message) {
     }
     connection.send(JSON.stringify(message));
 };
+
+// Login
+// Check overlap
+//
 function onLogin(success) {
+    // if name is already exist
     if (success === false) {
         alert("Login unsuccessful, please try a different name.");
     } else {
+        // Login div disappear
         loginPage.style.display = "none";
+        // Call div disappear
         callPage.style.display = "block";
         // Get the plumbing ready for a call
         startConnection();
     }
 };
+
 callButton.addEventListener("click", function () {
     var theirUsername = theirUsernameInput.value;
     if (theirUsername.length > 0) {
         startPeerConnection(theirUsername);
     }
 });
+
 hangUpButton.addEventListener("click", function () {
     send({
         type: "leave"
     });
     onLeave();
 });
+
 function onOffer(offer, name) {
     connectedUser = name;
     yourConnection.setRemoteDescription(new
@@ -111,13 +127,14 @@ function onLeave() {
     yourConnection.onaddstream = null;
     setupPeerConnection(stream);
 }
+// Search User Media( Cam )
 function hasUserMedia() {
-
     navigator.getUserMedia = navigator.getUserMedia ||
         navigator.webkitGetUserMedia || navigator.mozGetUserMedia ||
         navigator.msGetUserMedia;
     return !!navigator.getUserMedia;
 }
+// RTCPeerConnection
 function hasRTCPeerConnection() {
     window.RTCPeerConnection = window.RTCPeerConnection ||
         window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
@@ -128,10 +145,12 @@ function hasRTCPeerConnection() {
         window.webkitRTCIceCandidate || window.mozRTCIceCandidate;
     return !!window.RTCPeerConnection;
 }
+// init Video var
 var yourVideo = document.querySelector('#yours'),
     theirVideo = document.querySelector('#theirs'),
     yourConnection, connectedUser, stream;
 
+// for mobile
 var mobile = {
     video: {
         mandatory: {
@@ -141,6 +160,7 @@ var mobile = {
     },
     audio:true
 };
+// for desktop
 var desktop = {
     video: {
         mandatory: {
@@ -151,6 +171,8 @@ var desktop = {
     audio:true
 
 };
+
+// check user env
 var constraints;
 if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|OperaMini/i.test(navigator.userAgent)) {
     constraints = mobile;
@@ -158,6 +180,8 @@ if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|OperaMini/i.test(navigat
     constraints = desktop;
 }
 
+// if Login Success will start
+// webRTC only Support Chrome,firefox,Opera
 function startConnection() {
     if (hasUserMedia()) {
         navigator.getUserMedia(constraints, function
@@ -176,13 +200,18 @@ function startConnection() {
         alert("Sorry, your browser does not support WebRTC.");
     }
 }
+// if U have PeerConnection
 function setupPeerConnection(stream) {
+    // STUN Server
     var configuration = {
         "iceServers": [{"url": "stun:stun.l.google.com:19302"}]
     };
+    // Make PeerConnection
     yourConnection = new RTCPeerConnection(configuration);
     // Setup stream listening
+    // My Stream Add
     yourConnection.addStream(stream);
+    // Callee Stream Add
     yourConnection.onaddstream = function (e) {
         theirVideo.src = window.URL.createObjectURL(e.stream);
     };
